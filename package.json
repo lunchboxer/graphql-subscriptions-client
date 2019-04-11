@@ -9,8 +9,12 @@
   "keywords": [
     "graphql"
   ],
-  "author": "",
+  "author": "James Smith",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lunchboxer/graphql-subscriptions-client"
+  },
   "dependencies": {
     "backo2": "^1.0.2",
     "eventemitter3": "^3.1.0",
