@@ -1,6 +1,5 @@
 import Backoff from "backo2";
 import EventEmitter from "eventemitter3";
-import { print } from "graphql/language/printer";
 import { getOperationAST } from "graphql/utilities/getOperationAST";
 import $$observable from "symbol-observable";
 
@@ -314,10 +313,7 @@ export class SubscriptionClient {
     const payloadToReturn =
       payload && payload.query
         ? Object.assign({}, payload, {
-            query:
-              typeof payload.query === "string"
-                ? payload.query
-                : print(payload.query)
+            query: payload.query
           })
         : payload;
     return {
