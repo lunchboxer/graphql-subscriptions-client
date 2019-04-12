@@ -23,3 +23,5 @@ const query = `subscription onNewItem {
 
 client.request({query})
 ```
+
+Query must be string.

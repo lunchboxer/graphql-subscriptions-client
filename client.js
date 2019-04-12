@@ -1,6 +1,5 @@
 import Backoff from "backo2";
 import EventEmitter from "eventemitter3";
-import { getOperationAST } from "graphql/utilities/getOperationAST";
 import $$observable from "symbol-observable";
 
 const WS_TIMEOUT = 30000;
@@ -298,12 +297,12 @@ export class SubscriptionClient {
       throw new Error("Must provide an handler.");
     }
     if (
-      (!isString(query) && !getOperationAST(query, operationName)) ||
+      !isString(query) ||
       (operationName && !isString(operationName)) ||
       (variables && !isObject(variables))
     ) {
       throw new Error(
-        "Incorrect option types. query must be a string or a document," +
+        "Incorrect option types. query must be a string," +
           "`operationName` must be a string, and `variables` must be an object."
       );
     }
