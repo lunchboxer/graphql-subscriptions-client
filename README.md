@@ -7,7 +7,7 @@ This is based directly on the client from [subscriptions-transport-ws](https://g
 If you have a apollo-server instance you can use this for subscriptions only, pass all requests over the websocket.
 
 ```js
-import { SubscriptionClient } from 'subscriptions-transport-ws';
+import { SubscriptionClient } from 'graphql-subscriptions-client';
 
 const GRAPHQL_ENDPOINT = 'ws://localhost:3000/graphql';
 
