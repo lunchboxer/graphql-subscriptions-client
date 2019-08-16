@@ -35,7 +35,7 @@ I couldn't find any roll-your-own solutions that worked on the client for subscr
 
 ## Usage
 
-If you have a apollo-server instance you can use this for subscriptions only, pass all requests over the websocket.
+If you have a apollo-server instance you can use this for subscriptions only, pass all requests over the websocket. The API is similar to what's described at [subscriptions-transport-ws docs](https://github.com/apollographql/subscriptions-transport-ws#api-docs) except that it doesn't support middleware and requires queries to be strings.
 
 ```js
 import { SubscriptionClient } from 'graphql-subscriptions-client';
