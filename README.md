@@ -8,26 +8,7 @@ tldr; It works with rollup, and its lightweight
 
 subscriptions-transport-ws works fine and it's better maintained so If you aren't having problems with it, you probably might want to use it instead. If you have tried to use that package with rollup however then you may have become frustrated and hopeless.
 
-First you encounter the following error:
-
-`[!] Error: 'SubscriptionClient' is not exported by node_modules/subscriptions-transport-ws/dist/index.js`
-
-This you can fix by replacing the call to `commonjs()` with the following:
-
-```javascript
-  commonjs({
-      include: "node_modules/**",
-      namedExports: {
-        "node_modules/subscriptions-transport-ws/dist/index.js": [
-          "SubscriptionClient"
-        ]
-      }
-    }),
-```
-
-But then you discover that the package makes reference to a lot of global variables that rollup doesn't know what to do with. So you add the builtins and globals plugins and try to build again and now you have "(!) `this` has been rewritten to `undefined`" and you think that doesn't sound right. You look it up and maybe it makes sense, but what to do now?
-
-You may have slightly different results. I found that the imports from the graphql module were causing problems and that I didn't have much need for them. This module ends up being therefore much smaller and simpler, but one difference is that queries must be strings and it only uses native WebSocket, so you may end up with problems if you aren't targeting modern browsers.
+I found that the imports from the graphql module were causing problems and that I didn't have much need for them. This module ends up being therefore much smaller and simpler, but one difference is that queries **must be strings** and it only uses native WebSocket, so you may end up with problems if you aren't targeting modern browsers or if you like using graphql-tag's gql template string functions to define your queries.
 
 ### Subscriptions without apollo-client
 
@@ -52,6 +33,10 @@ const query = `subscription onNewItem {
 // set up the client, which can be reused
 const client = new SubscriptionClient(GRAPHQL_ENDPOINT, {
   reconnect: true,
+  lazy: true, // only connect when there is a query
+  connectionCallback: error => {
+    error && console.error(error)
+  }
 });
 
 // make the actual request
