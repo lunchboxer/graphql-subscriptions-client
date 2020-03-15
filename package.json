@@ -17,7 +17,7 @@
   },
   "dependencies": {
     "backo2": "^1.0.2",
-    "eventemitter3": "^3.1.0",
+    "eventemitter3": "^3.1.2",
     "symbol-observable": "^1.2.0"
   }
 }
