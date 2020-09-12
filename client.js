@@ -2,6 +2,7 @@ import Backoff from 'backo2'
 import EventEmitter from 'eventemitter3'
 import $$observable from 'symbol-observable'
 
+const WS_MINTIMEOUT = 1000
 const WS_TIMEOUT = 30000
 
 function isString(value) {
@@ -16,6 +17,7 @@ export class SubscriptionClient {
     const {
       connectionCallback = undefined,
       connectionParams = {},
+      minTimeout = WS_MINTIMEOUT,
       timeout = WS_TIMEOUT,
       reconnect = false,
       reconnectionAttempts = Infinity,
@@ -28,6 +30,7 @@ export class SubscriptionClient {
     this.url = url
     this.operations = {}
     this.nextOperationId = 0
+    this.wsMinTimeout = minTimeout
     this.wsTimeout = timeout
     this.unsentMessagesQueue = []
     this.reconnect = reconnect
@@ -207,7 +210,7 @@ export class SubscriptionClient {
   }
 
   createMaxConnectTimeGenerator() {
-    const minValue = 1000
+    const minValue = this.wsMinTimeout
     const maxValue = this.wsTimeout
     return new Backoff({
       min: minValue,
