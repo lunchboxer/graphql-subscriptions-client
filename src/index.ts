@@ -1,19 +1,89 @@
 import Backoff from 'backo2'
-import EventEmitter from 'eventemitter3'
+import EventEmitter, { ListenerFn }  from 'eventemitter3'
 import $$observable from 'symbol-observable'
 
 const WS_MINTIMEOUT = 1000
 const WS_TIMEOUT = 30000
 
-function isString(value) {
-  return typeof value === 'string'
+const isString = (value: unknown): value is string => typeof value === 'string';
+const isObject = (value: unknown): value is object => value !== null && typeof value === 'object';
+
+export interface OperationOptions {
+  query: string
+  variables?: Object
+  operationName?: string
+  [key: string]: any
 }
-function isObject(value) {
-  return value !== null && typeof value === 'object'
+
+export interface Observer<T> {
+  next?: (value: T) => void
+  error?: (error: Error) => void
+  complete?: () => void
+}
+
+export interface Observable<T> {
+  subscribe(
+    observer: Observer<T>
+  ): {
+    unsubscribe: () => void
+  }
+}
+
+
+interface Operations {
+  [key: string]: {
+    options: OperationOptions,
+    handler: (error: Error, data: unknown) => any
+  }
+}
+
+export declare type ConnectionParams = {
+  [paramName: string]: unknown
+}
+
+export declare type ConnectionParamsOptions =
+   | ConnectionParams
+   | Function
+   | Promise<ConnectionParams>
+
+export interface ClientOptions {
+  connectionCallback?: (error: Error[], result?: unknown) => void
+  connectionParams?: ConnectionParamsOptions
+  minTimeout?: number
+  timeout?: number
+  reconnect?: boolean
+  reconnectionAttempts?: number
+  lazy?: boolean
+  inactivityTimeout?: number
 }
 
 export class SubscriptionClient {
-  constructor(url, options) {
+  private wsImpl: typeof WebSocket;
+  private connectionCallback;
+  private url: string;
+  private operations: Operations;
+  private nextOperationId: number;
+  private wsMinTimeout: number;
+  private wsTimeout: number;
+  private unsentMessagesQueue: unknown[];
+  private reconnect: boolean;
+  private reconnecting: boolean;
+  private reconnectionAttempts: number;
+  private lazy: boolean;
+  private inactivityTimeout: number;
+  private closedByUser: boolean;
+  private backoff: Backoff;
+  private eventEmitter: EventEmitter;
+  private client: WebSocket;
+  private maxConnectTimeGenerator: Backoff;
+  private connectionParams: () => Promise<any>;
+  private checkConnectionIntervalId: number;
+  private maxConnectTimeoutId: number;
+  private tryReconnectTimeoutId: number;
+  private inactivityTimeoutId: number;
+  private wasKeepAliveReceived: boolean;
+
+  constructor(url: string, options: ClientOptions) {
     const {
       connectionCallback = undefined,
       connectionParams = {},
@@ -50,7 +120,7 @@ export class SubscriptionClient {
     }
   }
 
-  get status() {
+  get status(): number {
     if (this.client === null) {
       return this.wsImpl.CLOSED
     }
@@ -81,7 +151,7 @@ export class SubscriptionClient {
     }
   }
 
-  request(request) {
+  request(request: OperationOptions) {
     const getObserver = this.getObserver.bind(this)
     const executeOperation = this.executeOperation.bind(this)
     const unsubscribe = this.unsubscribe.bind(this)
@@ -124,34 +194,34 @@ export class SubscriptionClient {
     }
   }
 
-  on(eventName, callback, context) {
+  on(eventName: string, callback: ListenerFn, context: unknown) {
     const handler = this.eventEmitter.on(eventName, callback, context)
     return () => {
       handler.off(eventName, callback, context)
     }
   }
 
-  onConnected(callback, context) {
+  onConnected(callback: ListenerFn, context: unknown) {
     return this.on('connected', callback, context)
   }
 
-  onConnecting(callback, context) {
+  onConnecting(callback: ListenerFn, context: unknown) {
     return this.on('connecting', callback, context)
   }
 
-  onDisconnected(callback, context) {
+  onDisconnected(callback: ListenerFn, context: unknown) {
     return this.on('disconnected', callback, context)
   }
 
-  onReconnected(callback, context) {
+  onReconnected(callback: ListenerFn, context: unknown) {
     return this.on('reconnected', callback, context)
   }
 
-  onReconnecting(callback, context) {
+  onReconnecting(callback: ListenerFn, context: unknown) {
     return this.on('reconnecting', callback, context)
   }
 
-  onError(callback, context) {
+  onError(callback: ListenerFn, context: unknown) {
     return this.on('error', callback, context)
   }
 
@@ -161,12 +231,12 @@ export class SubscriptionClient {
     })
   }
 
-  getConnectionParams(connectionParams) {
-    return () =>
-      new Promise((resolve, reject) => {
+  getConnectionParams(connectionParams: Function | { [key: string]: any }) {
+    return () => {
+      return new Promise((resolve, reject) => {
         if (typeof connectionParams === 'function') {
           try {
-            return resolve(connectionParams(null))
+            return resolve(connectionParams())
           } catch (error) {
             return reject(error)
           }
@@ -174,6 +244,7 @@ export class SubscriptionClient {
 
         resolve(connectionParams)
       })
+    }
   }
 
   executeOperation(options, handler) {
@@ -280,7 +351,7 @@ export class SubscriptionClient {
     }
   }
 
-  buildMessage(id, type, payload) {
+  buildMessage(id: string, type, payload) {
     const payloadToReturn =
       payload && payload.query
         ? Object.assign({}, payload, {
@@ -313,12 +384,12 @@ export class SubscriptionClient {
     ]
   }
 
-  sendMessage(id, type, payload) {
+  sendMessage(id: string | undefined, type: 'start' | 'stop' | 'connection_init' | 'connection_terminate' | 'connection_error', payload: any) {
     this.sendMessageRaw(this.buildMessage(id, type, payload))
   }
 
   // send message, or queue it if connection is not open
-  sendMessageRaw(message) {
+  sendMessageRaw(message: any) {
     switch (this.status) {
       case this.wsImpl.OPEN:
         const serializedMessage = JSON.stringify(message)
@@ -448,7 +519,7 @@ export class SubscriptionClient {
     })
   }
 
-  processReceivedData(receivedData) {
+  processReceivedData(receivedData: string) {
     let parsedMessage
     let opId
 
@@ -532,7 +603,7 @@ export class SubscriptionClient {
     }
   }
 
-  unsubscribe(opId) {
+  unsubscribe(opId: string) {
     if (this.operations[opId]) {
       delete this.operations[opId]
       this.setInactivityTimeout()
