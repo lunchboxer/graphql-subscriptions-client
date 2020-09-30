@@ -1,3 +1,4 @@
+/// <reference lib="dom" />
 import Backoff from 'backo2'
 import EventEmitter, { ListenerFn }  from 'eventemitter3'
 import $$observable from 'symbol-observable'
@@ -164,7 +165,7 @@ export class SubscriptionClient {
       [$$observable]() {
         return this
       },
-      subscribe(observerOrNext, onError, onComplete) {
+      subscribe(observerOrNext, onError?, onComplete?) {
         const observer = getObserver(observerOrNext, onError, onComplete)
         opId = executeOperation(request, (error, result) => {
           if (error === null && result === null) {
