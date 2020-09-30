@@ -3,6 +3,7 @@
   "version": "0.13.0",
   "description": "A simpler client for graphql subscriptions based on apollographql/subscriptions-transport-ws",
   "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
     "build": "rm -rf dist && tsup src/index.ts --format esm,cjs,iife --legacy-output --dts",
     "prepublishOnly": "npm run build",
