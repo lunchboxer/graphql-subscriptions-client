@@ -1,6 +1,7 @@
 /// <reference lib="dom" />
+import WebSocket from 'ws'
 import Backoff from 'backo2'
-import EventEmitter, { ListenerFn }  from 'eventemitter3'
+import EventEmitter, { ListenerFn } from 'eventemitter3'
 import $$observable from 'symbol-observable'
 
 const WS_MINTIMEOUT = 1000
@@ -8,13 +9,6 @@ const WS_TIMEOUT = 30000
 
 const isString = (value: unknown): value is string => typeof value === 'string';
 const isObject = (value: unknown): value is object => value !== null && typeof value === 'object';
-
-export interface OperationOptions {
-  query: string
-  variables?: Object
-  operationName?: string
-  [key: string]: any
-}
 
 export interface Observer<T> {
   next?: (value: T) => void
@@ -30,11 +24,19 @@ export interface Observable<T> {
   }
 }
 
+export interface OperationOptions {
+  query: string
+  variables?: Object
+  operationName?: string
+  [key: string]: any
+}
+
+export type OperationsHandler = (error?: Error, data?: unknown) => any;
 
 interface Operations {
   [key: string]: {
     options: OperationOptions,
-    handler: (error: Error, data: unknown) => any
+    handler: OperationsHandler
   }
 }
 
@@ -43,12 +45,12 @@ export declare type ConnectionParams = {
 }
 
 export declare type ConnectionParamsOptions =
-   | ConnectionParams
-   | Function
-   | Promise<ConnectionParams>
+  | ConnectionParams
+  | Function
+  | Promise<ConnectionParams>
 
 export interface ClientOptions {
-  connectionCallback?: (error: Error[], result?: unknown) => void
+  connectionCallback?: (error?: Error[], result?: unknown) => void
   connectionParams?: ConnectionParamsOptions
   minTimeout?: number
   timeout?: number
@@ -57,6 +59,8 @@ export interface ClientOptions {
   lazy?: boolean
   inactivityTimeout?: number
 }
+
+type MessageType = 'start' | 'stop' | 'connection_init' | 'connection_terminate' | 'connection_error';
 
 export class SubscriptionClient {
   private wsImpl: typeof WebSocket;
@@ -78,10 +82,10 @@ export class SubscriptionClient {
   private client: WebSocket;
   private maxConnectTimeGenerator: Backoff;
   private connectionParams: () => Promise<any>;
-  private checkConnectionIntervalId: number;
-  private maxConnectTimeoutId: number;
-  private tryReconnectTimeoutId: number;
-  private inactivityTimeoutId: number;
+  private checkConnectionIntervalId: NodeJS.Timeout;
+  private maxConnectTimeoutId: NodeJS.Timeout;
+  private tryReconnectTimeoutId: NodeJS.Timeout;
+  private inactivityTimeoutId: NodeJS.Timeout;
   private wasKeepAliveReceived: boolean;
 
   constructor(url: string, options: ClientOptions) {
@@ -157,7 +161,7 @@ export class SubscriptionClient {
     const executeOperation = this.executeOperation.bind(this)
     const unsubscribe = this.unsubscribe.bind(this)
 
-    let opId
+    let opId: any
 
     this.clearInactivityTimeout()
 
@@ -165,9 +169,9 @@ export class SubscriptionClient {
       [$$observable]() {
         return this
       },
-      subscribe(observerOrNext, onError?, onComplete?) {
+      subscribe(observerOrNext: any, onError?: any, onComplete?: any) {
         const observer = getObserver(observerOrNext, onError, onComplete)
-        opId = executeOperation(request, (error, result) => {
+        opId = executeOperation(request, (error: any, result: any) => {
           if (error === null && result === null) {
             if (observer.complete) {
               observer.complete()
@@ -248,7 +252,7 @@ export class SubscriptionClient {
     }
   }
 
-  executeOperation(options, handler) {
+  executeOperation(options: OperationOptions, handler: OperationsHandler) {
     if (this.client === null) {
       this.connect()
     }
@@ -270,14 +274,16 @@ export class SubscriptionClient {
     return opId
   }
 
-  getObserver(observerOrNext, error, complete) {
+  getObserver(observerOrNext?: any, error?: any, complete?: any) {
+    // Next
     if (typeof observerOrNext === 'function') {
       return {
-        next: v => observerOrNext(v),
-        error: e => error && error(e),
+        next: (value: any) => observerOrNext(value),
+        error: (e: any) => error && error(e),
         complete: () => complete && complete()
       }
     }
+    // Observer
     return observerOrNext
   }
 
@@ -332,7 +338,7 @@ export class SubscriptionClient {
     }
   }
 
-  checkOperationOptions(options, handler) {
+  checkOperationOptions(options: OperationOptions, handler: OperationsHandler) {
     const { query, variables, operationName } = options
     if (!query) {
       throw new Error('Must provide a query.')
@@ -352,7 +358,7 @@ export class SubscriptionClient {
     }
   }
 
-  buildMessage(id: string, type, payload) {
+  buildMessage(id: string, type: MessageType, payload: any) {
     const payloadToReturn =
       payload && payload.query
         ? Object.assign({}, payload, {
@@ -366,7 +372,7 @@ export class SubscriptionClient {
     }
   }
 
-  formatErrors(errors) {
+  formatErrors(errors: any): any {
     if (Array.isArray(errors)) {
       return errors
     }
@@ -385,7 +391,7 @@ export class SubscriptionClient {
     ]
   }
 
-  sendMessage(id: string | undefined, type: 'start' | 'stop' | 'connection_init' | 'connection_terminate' | 'connection_error', payload: any) {
+  sendMessage(id: string | undefined, type: MessageType, payload: any) {
     this.sendMessageRaw(this.buildMessage(id, type, payload))
   }
 
