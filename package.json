@@ -8,6 +8,8 @@
   "scripts": {
     "build": "rm -rf dist && tsup src/index.ts --format esm,cjs,iife --legacy-output --dts",
     "prepublishOnly": "npm run build",
+    "prepare": "npm run build",
+    "prepack": "npm run build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
