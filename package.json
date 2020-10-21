@@ -2,12 +2,21 @@
   "name": "graphql-subscriptions-client",
   "version": "0.13.0",
   "description": "A simpler client for graphql subscriptions based on apollographql/subscriptions-transport-ws",
-  "main": "client.js",
+  "module": "dist/esm/index.js",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
+    "build": "rm -rf dist && tsup src/index.ts --format esm,cjs,iife --legacy-output --dts",
+    "prepublishOnly": "npm run build",
+    "prepare": "npm run build",
+    "prepack": "npm run build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
     "graphql"
+  ],
+  "files": [
+    "dist"
   ],
   "author": "James Smith",
   "license": "MIT",
@@ -18,6 +27,13 @@
   "dependencies": {
     "backo2": "^1.0.2",
     "eventemitter3": "^3.1.2",
-    "symbol-observable": "^1.2.0"
+    "symbol-observable": "^1.2.0",
+    "ws": "^7.3.1"
+  },
+  "devDependencies": {
+    "@types/backo2": "^1.0.1",
+    "@types/ws": "^7.2.7",
+    "tsup": "^3.7.0",
+    "typescript": "^4.0.3"
   }
 }
