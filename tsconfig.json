@@ -1,8 +1,9 @@
 {
-    "compilerOptions": {
-        "moduleResolution": "node",
-        "allowSyntheticDefaultImports": true,
-        "noImplicitAny": true,
-        "target": "es2020"
-    }
+  "compilerOptions": {
+    "moduleResolution": "node",
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "noImplicitAny": true,
+    "target": "es2020"
+  }
 }
