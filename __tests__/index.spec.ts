@@ -23,4 +23,27 @@ describe('Graphql Subscriptions Client', () => {
     await expect(server).toReceiveMessage({ "payload": {}, "type": "connection_init" });
     await expect(server).toReceiveMessage({ "id": "1", "payload": { "query": "{ hello }" }, "type": "start" });
   });
+
+  it('should process simple query response', async done => {
+    const client = new SubscriptionClient(wsEndpoint);
+    await server.connected;
+
+    client.request({ query: '{ hello }' }).subscribe(res => {
+      expect(res).toEqual({ hello: "world" })
+      done();
+    });
+    server.send({ id: "1", type: "data", payload: { hello: "world" } })
+  });
+
+  it('should process multiple query response', async done => {
+    const client = new SubscriptionClient(wsEndpoint);
+    await server.connected;
+
+    client.request({ query: '{ hello }' }).subscribe(res => {
+      expect(res).toEqual({ hello: "world" })
+      done()
+    });
+
+    server.send([{ id: "1", type: "data", payload: { hello: "world" } }, { id: "1", type: "complete" }])
+  });
 });
