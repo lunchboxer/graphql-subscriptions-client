@@ -3,7 +3,7 @@ import Backoff from 'backo2'
 import EventEmitter, { ListenerFn } from 'eventemitter3'
 import $$observable from 'symbol-observable'
 
-const WS_MINTIMEOUT = 1000
+const WS_MIN_TIMEOUT = 1000
 const WS_TIMEOUT = 30000
 
 const isString = (value: unknown): value is string => typeof value === 'string';
@@ -27,6 +27,7 @@ export interface OperationOptions {
   query: string
   variables?: Object
   operationName?: string
+
   [key: string]: any
 }
 
@@ -63,35 +64,35 @@ type MessageType = 'start' | 'stop' | 'connection_init' | 'connection_terminate'
 
 export class SubscriptionClient {
   private wsImpl: typeof WebSocket;
-  private connectionCallback;
-  private url: string;
-  private operations: Operations;
+  private readonly connectionCallback;
+  private readonly url: string;
+  private readonly operations: Operations;
   private nextOperationId: number;
-  private wsMinTimeout: number;
-  private wsTimeout: number;
+  private readonly wsMinTimeout: number;
+  private readonly wsTimeout: number;
   private unsentMessagesQueue: unknown[];
-  private reconnect: boolean;
+  private readonly reconnect: boolean;
   private reconnecting: boolean;
-  private reconnectionAttempts: number;
-  private lazy: boolean;
-  private inactivityTimeout: number;
+  private readonly reconnectionAttempts: number;
+  private readonly lazy: boolean;
+  private readonly inactivityTimeout: number;
   private closedByUser: boolean;
   private backoff: Backoff;
   private eventEmitter: EventEmitter;
   private client: WebSocket;
   private maxConnectTimeGenerator: Backoff;
-  private connectionParams: () => Promise<any>;
+  private readonly connectionParams: () => Promise<any>;
   private checkConnectionIntervalId: NodeJS.Timeout;
   private maxConnectTimeoutId: NodeJS.Timeout;
   private tryReconnectTimeoutId: NodeJS.Timeout;
   private inactivityTimeoutId: NodeJS.Timeout;
   private wasKeepAliveReceived: boolean;
 
-  constructor(url: string, options: ClientOptions) {
+  constructor(url: string, options?: ClientOptions) {
     const {
       connectionCallback = undefined,
       connectionParams = {},
-      minTimeout = WS_MINTIMEOUT,
+      minTimeout = WS_MIN_TIMEOUT,
       timeout = WS_TIMEOUT,
       reconnect = false,
       reconnectionAttempts = Infinity,
@@ -521,23 +522,28 @@ export class SubscriptionClient {
     })
 
     this.client.addEventListener('message', ({ data }) => {
-      this.processReceivedData(data)
+      let parsedMessage;
+      try {
+        parsedMessage = JSON.parse(data)
+      } catch (error) {
+        throw new Error(`Message must be JSON-parseable. Got: ${data}`)
+      }
+
+      if (Array.isArray(parsedMessage)) {
+        for (const message of parsedMessage) {
+          this.processReceivedMessage(message);
+        }
+      } else {
+        this.processReceivedMessage(parsedMessage)
+      }
     })
   }
 
-  processReceivedData(receivedData: string) {
-    let parsedMessage
-    let opId
-
-    try {
-      parsedMessage = JSON.parse(receivedData)
-      opId = parsedMessage.id
-    } catch (error) {
-      throw new Error(`Message must be JSON-parseable. Got: ${receivedData}`)
-    }
+  processReceivedMessage(message: any) {
+    const opId = message.id
 
     if (
-      ['data', 'complete', 'error'].includes(parsedMessage.type) &&
+      ['data', 'complete', 'error'].includes(message.type) &&
       !this.operations[opId]
     ) {
       this.unsubscribe(opId)
@@ -545,10 +551,10 @@ export class SubscriptionClient {
       return
     }
 
-    switch (parsedMessage.type) {
+    switch (message.type) {
       case 'connection_error':
         if (this.connectionCallback) {
-          this.connectionCallback(parsedMessage.payload)
+          this.connectionCallback(message.payload)
         }
         break
 
@@ -570,18 +576,18 @@ export class SubscriptionClient {
 
       case 'error':
         this.operations[opId].handler(
-          this.formatErrors(parsedMessage.payload),
+          this.formatErrors(message.payload),
           null
         )
         delete this.operations[opId]
         break
 
       case 'data':
-        const parsedPayload = !parsedMessage.payload.errors
-          ? parsedMessage.payload
+        const parsedPayload = !message.payload.errors
+          ? message.payload
           : {
-            ...parsedMessage.payload,
-            errors: this.formatErrors(parsedMessage.payload.errors)
+            ...message.payload,
+            errors: this.formatErrors(message.payload.errors)
           }
         this.operations[opId].handler(null, parsedPayload)
         break

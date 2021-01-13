@@ -1,0 +1,4 @@
+enhancement: [ 'feature-*', 'feat-*' ]
+documentation: [ 'doc-*' ]
+bug: [ 'fix-*', 'bugfix-*' ]
+chore: [ 'chore-*' ]

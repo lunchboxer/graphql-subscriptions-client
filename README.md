@@ -16,7 +16,14 @@ I couldn't find any roll-your-own solutions that worked on the client for subscr
 
 ## Usage
 
-If you have a apollo-server instance you can use this for subscriptions only, pass all requests over the websocket. The API is similar to what's described at [subscriptions-transport-ws docs](https://github.com/apollographql/subscriptions-transport-ws#api-docs) except that it doesn't support middleware and requires queries to be strings.
+If you have a apollo-server instance you can use this for subscriptions only, pass all requests over the websocket. 
+The API is similar to what's described at [subscriptions-transport-ws docs](https://github.com/apollographql/subscriptions-transport-ws#api-docs) except that it doesn't support middleware and requires queries to be strings. 
+
+Also, this client supports batch messages as arrays from the server, and they will be processed as if they were received one after another, for example: 
+
+```
+[{ id: "1", type: "data", ... }, { id: "1", type: "complete" }]
+```
 
 ```js
 import { SubscriptionClient } from 'graphql-subscriptions-client';
