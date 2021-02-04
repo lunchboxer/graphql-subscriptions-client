@@ -27,6 +27,7 @@
   "dependencies": {
     "backo2": "^1.0.2",
     "eventemitter3": "^3.1.2",
+    "isomorphic-ws": "^4.0.1",
     "symbol-observable": "^1.2.0"
   },
   "devDependencies": {

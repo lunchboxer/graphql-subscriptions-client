@@ -1,4 +1,5 @@
 /// <reference lib="dom" />
+import WebSocket from 'isomorphic-ws'
 import Backoff from 'backo2'
 import EventEmitter, { ListenerFn } from 'eventemitter3'
 import $$observable from 'symbol-observable'
