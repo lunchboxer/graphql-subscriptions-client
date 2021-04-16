@@ -1,5 +1,11 @@
 # graphql-subscriptions-client
 
+## graphql-ws
+
+This library works fine, but you may consider using [graphql-ws](https://github.com/enisdenjo/graphql-ws). It's popular, well-maintained, works, and has zero dependencies.
+
+## What is this package
+
 This is based directly on the client from [subscriptions-transport-ws](https://github.com/apollographql/subscriptions-transport-ws). As the name suggests, it's only for use as a client. It uses native websockets to communicate with a graphql server which is using ['graphql-ws' protocol](https://github.com/apollographql/subscriptions-transport-ws/blob/master/PROTOCOL.md). It plays nice with rollup, too.
 
 ## Why this package
@@ -16,51 +22,52 @@ I couldn't find any roll-your-own solutions that worked on the client for subscr
 
 ## Usage
 
-If you have a apollo-server instance you can use this for subscriptions only, pass all requests over the websocket. 
-The API is similar to what's described at [subscriptions-transport-ws docs](https://github.com/apollographql/subscriptions-transport-ws#api-docs) except that it doesn't support middleware and requires queries to be strings. 
+If you have a apollo-server instance you can use this for subscriptions only, pass all requests over the websocket.
+The API is similar to what's described at [subscriptions-transport-ws docs](https://github.com/apollographql/subscriptions-transport-ws#api-docs) except that it doesn't support middleware and requires queries to be strings.
 
-Also, this client supports batch messages as arrays from the server, and they will be processed as if they were received one after another, for example: 
+Also, this client supports batch messages as arrays from the server, and they will be processed as if they were received one after another, for example:
 
-```
+```javascript
 [{ id: "1", type: "data", ... }, { id: "1", type: "complete" }]
 ```
 
 ```js
-import { SubscriptionClient } from 'graphql-subscriptions-client';
+import { SubscriptionClient } from "graphql-subscriptions-client";
 
 // get ready
-const GRAPHQL_ENDPOINT = 'ws://localhost:3000/graphql';
+const GRAPHQL_ENDPOINT = "ws://localhost:3000/graphql";
 
 const query = `subscription onNewItem {
         newItemCreated {
             id
         }
-    }`
+    }`;
 
 // set up the client, which can be reused
 const client = new SubscriptionClient(GRAPHQL_ENDPOINT, {
   reconnect: true,
   lazy: true, // only connect when there is a query
-  connectionCallback: error => {
-    error && console.error(error)
-  }
+  connectionCallback: (error) => {
+    error && console.error(error);
+  },
 });
 
 // make the actual request
-client.request({query})
+client.request({ query });
 
 // the above doesn't do much though
 
 // call subscription.unsubscribe() later to clean up
-const subscription = client.request({query})
+const subscription = client
+  .request({ query })
   // so lets actually do something with the response
   .subscribe({
-    next ({data}) {
+    next({ data }) {
       if (data) {
-        console.log('We got something!', data)
+        console.log("We got something!", data);
       }
-    }
-  })
+    },
+  });
 ```
 
 Query must be a string.
