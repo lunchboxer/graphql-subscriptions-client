@@ -65,7 +65,7 @@ type MessageType = 'start' | 'stop' | 'connection_init' | 'connection_terminate'
 export class SubscriptionClient {
   private wsImpl: typeof WebSocket;
   private readonly connectionCallback;
-  private readonly url: string;
+  private readonly url: (() => string) | string;
   private readonly operations: Operations;
   private nextOperationId: number;
   private readonly wsMinTimeout: number;
@@ -88,7 +88,7 @@ export class SubscriptionClient {
   private inactivityTimeoutId: NodeJS.Timeout;
   private wasKeepAliveReceived: boolean;
 
-  constructor(url: string, options?: ClientOptions) {
+  constructor(url: (() => string) | string, options?: ClientOptions) {
     const {
       connectionCallback = undefined,
       connectionParams = {},
@@ -484,7 +484,7 @@ export class SubscriptionClient {
   }
 
   connect() {
-    this.client = new WebSocket(this.url, 'graphql-ws')
+    this.client = new WebSocket(typeof this.url === 'function' ? this.url() : this.url, 'graphql-ws')
 
     this.checkMaxConnectTimeout()
 
