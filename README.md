@@ -12,7 +12,7 @@ This is based directly on the client from [subscriptions-transport-ws](https://g
 
 tldr; It works with rollup, and its lightweight
 
-subscriptions-transport-ws works fine and it's better maintained so If you aren't having problems with it, you probably might want to use it instead. If you have tried to use that package with rollup however then you may have become frustrated and hopeless.
+subscriptions-transport-ws works fine in many cases, so if you aren't having problems with it, you might want to use it instead. If you have tried to use that package with rollup however then you may have become frustrated and hopeless.
 
 I found that the imports from the graphql module were causing problems and that I didn't have much need for them. This module ends up being therefore much smaller and simpler, but one difference is that queries **must be strings** and it only uses native WebSocket, so you may end up with problems if you aren't targeting modern browsers or if you like using graphql-tag's gql template string functions to define your queries.
 
